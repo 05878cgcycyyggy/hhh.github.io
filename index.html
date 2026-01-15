@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linux Terminal Simulate (Color Glitch)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #000;
+            font-family: "Consolas", "Monaco", monospace;
+        }
+        #terminal {
+            width: 100vw;
+            height: 100vh;
+            padding: 20px;
+            color: #fff;
+            font-size: 14px;
+            line-height: 1.5;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        #linux-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        #linux-text {
+            font-size: 120px;
+            font-weight: bold;
+            color: #fff; /* 文字主体黑白 */
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        /* 正常样式：无重影 */
+        .normal {
+            text-shadow: none;
+            transform: translate(0, 0);
+            opacity: 1;
+        }
+        /* 故障动画：彩色重影干扰 */
+        .glitch {
+            animation: glitch-color 0.3s infinite;
+        }
+        /* 彩色故障关键帧：红/蓝/绿错位重影 */
+        @keyframes glitch-color {
+            0% {
+                transform: translate(0, 0);
+                text-shadow: -2px -2px 0 #ff0000, 2px 2px 0 #0000ff;
+            }
+            25% {
+                transform: translate(-3px, 2px);
+                text-shadow: 3px -2px 0 #00ff00, -2px 2px 0 #ff00ff;
+            }
+            50% {
+                transform: translate(3px, -2px);
+                text-shadow: -3px 3px 0 #ffff00, 2px -2px 0 #00ffff;
+            }
+            75% {
+                transform: translate(-2px, -3px);
+                text-shadow: 2px 3px 0 #ff6600, -3px -2px 0 #6600ff;
+            }
+            100% {
+                transform: translate(0, 0);
+                text-shadow: -2px -2px 0 #ff0000, 2px 2px 0 #0000ff;
+            }
+        }
+        /* 渐隐消失样式 */
+        .fade-out {
+            opacity: 0;
+            transform: scale(0.8);
+            text-shadow: none;
+            animation: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="terminal"></div>
+    <div id="linux-container">
+        <div id="linux-text" class="normal">linux</div>
+    </div>
+
+    <script>
+        const terminal = document.getElementById('terminal');
+        const linuxContainer = document.getElementById('linux-container');
+        const linuxText = document.getElementById('linux-text');
+
+        // 模拟Linux终端多样化输出内容
+        const terminalContent = [
+            "user@linux:~$ ls -la",
+            "total 128 drwxr-xr-x  10 user user  4096 Jan 10 14:32 . drwxr-xr-x   3 root root  4096 Jan  1 00:00 .. -rw-r--r--   1 user user   220 Jan  1 00:00 .bash_logout",
+            "-rw-r--r--   1 user user  3771 Jan  1 00:00 .bashrc -rw-r--r--   1 user user   807 Jan  1 00:00 .profile drwx------   2 user user  4096 Jan  5 18:20 .ssh",
+            "user@linux:~$ uname -a",
+            "Linux linux 5.15.0-88-generic #98-Ubuntu SMP Mon Oct 2 15:18:56 UTC 2023 x86_64 x86_64 x86_64 GNU/Linux",
+            "user@linux:~$ sudo apt update",
+            "Hit:1 http://archive.ubuntu.com/ubuntu jammy InRelease Hit:2 http://archive.ubuntu.com/ubuntu jammy-updates InRelease Hit:3 http://archive.ubuntu.com/ubuntu jammy-backports InRelease",
+            "Hit:4 http://security.ubuntu.com/ubuntu jammy-security InRelease Reading package lists... Done Building dependency tree... Done Reading state information... Done",
+            "12 packages can be upgraded. Run 'apt list --upgradable' to see them.",
+            "user@linux:~$ wget https://example.com/linux-iso.iso",
+            "--2026-01-14 16:25:30--  https://example.com/linux-iso.iso",
+            "Resolving example.com (example.com)... 93.184.216.34, 2606:2800:220:1:248:1893:25c8:1946",
+            "Connecting to example.com (example.com)|93.184.216.34|:443... connected.",
+            "HTTP request sent, awaiting response... 200 OK",
+            "Length: 4682752000 (4.4G) [application/x-iso9660-image]",
+            "Saving to: ‘linux-iso.iso’"
+        ];
+
+        let currentLineIndex = 0;
+        let printedContent = "";
+        let isDownloading = false;
+        let downloadProgress = 0;
+
+        // 生成虚假下载进度条
+        function generateProgressBar(progress) {
+            const barLength = 50;
+            const filled = Math.floor((progress / 100) * barLength);
+            const empty = barLength - filled;
+            const bar = "[" + "#".repeat(filled) + "-".repeat(empty) + "]";
+            const speed = (Math.random() * 10 + 5).toFixed(1);
+            return ` ${bar} ${progress}% ${speed}MB/s ETA: ${Math.floor((100 - progress) / 2)}s`;
+        }
+
+        // 逐行打印终端内容
+        function printLine() {
+            if (!isDownloading && currentLineIndex < terminalContent.length) {
+                printedContent += terminalContent[currentLineIndex] + "\n";
+                terminal.textContent = printedContent;
+                terminal.scrollTop = terminal.scrollHeight;
+                
+                if (terminalContent[currentLineIndex].includes("Saving to: ‘linux-iso.iso’")) {
+                    isDownloading = true;
+                    downloadProgress = 0;
+                }
+
+                currentLineIndex++;
+                const delay = Math.floor(Math.random() * 450) + 150;
+                setTimeout(printLine, delay);
+            } else if (isDownloading) {
+                downloadProgress += Math.floor(Math.random() * 3) + 1;
+                if (downloadProgress > 100) downloadProgress = 100;
+
+                const progressLine = generateProgressBar(downloadProgress);
+                const lines = printedContent.split("\n");
+                lines[lines.length - 2] = progressLine;
+                printedContent = lines.join("\n");
+                terminal.textContent = printedContent;
+                terminal.scrollTop = terminal.scrollHeight;
+
+                if (downloadProgress === 100) {
+                    isDownloading = false;
+                    printedContent += "\nlinux-iso.iso saved successfully.\n";
+                    terminal.textContent = printedContent;
+                    terminal.scrollTop = terminal.scrollHeight;
+                    setTimeout(printLine, 1000);
+                } else {
+                    setTimeout(printLine, 200);
+                }
+            } else {
+                setTimeout(showLinuxText, 1500);
+            }
+        }
+
+        // 控制文字状态切换：正常→彩色故障→正常→渐隐
+        function showLinuxText() {
+            terminal.style.display = 'none';
+            linuxContainer.style.display = 'flex';
+            
+            // 1秒后触发彩色故障效果
+            setTimeout(() => {
+                linuxText.classList.remove('normal');
+                linuxText.classList.add('glitch');
+            }, 1000);
+
+            // 2秒后恢复正常黑白样式
+            setTimeout(() => {
+                linuxText.classList.remove('glitch');
+                linuxText.classList.add('normal');
+            }, 2000);
+
+            // 3秒后渐隐消失
+            setTimeout(() => {
+                linuxText.classList.add('fade-out');
+            }, 3000);
+
+            // 4秒后完全隐藏
+            setTimeout(() => {
+                linuxContainer.style.display = 'none';
+            }, 4000);
+        }
+
+        // 启动打印
+        printLine();
+    </script>
+</body>
+</html>
